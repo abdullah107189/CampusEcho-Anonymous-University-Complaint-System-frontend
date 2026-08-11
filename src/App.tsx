@@ -12,10 +12,10 @@ import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import ComplaintsList from "./pages/dashboard/ComplaintsList";
 import ComplaintDetails from "./pages/dashboard/ComplaintDetails";
 import StaffManagement from "./pages/dashboard/StaffManagement"; 
-import Register from "./pages/public/Register";
-import VerifyOtp from "./pages/public/VerifyOTP";
-import ResendOtp from "./pages/public/ResendOtp";
-import Login from "./pages/public/Login";
+import Register from "./pages/public/auth/Register";
+import VerifyOtp from "./pages/public/auth/VerifyOtp";
+import ResendOtp from "./pages/public/auth/ResendOtp";
+import Login from "./pages/public/auth/Login";
 
 export default function App() {
   return (
