@@ -1,4 +1,4 @@
-import { useGetDashboardStatsQuery } from '../../lib/store/api/complaintApi';
+import { useGetDashboardStatsQuery } from '../../lib/api/complaintApi';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';

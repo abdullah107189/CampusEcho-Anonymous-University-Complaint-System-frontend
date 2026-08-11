@@ -1,5 +1,5 @@
 import { baseApi } from './baseApi';
-import { Complaint, DashboardStats, ComplaintNote } from '../../../types/complaint.types';
+import { Complaint, DashboardStats, ComplaintNote } from '../../types/complaint.types';
 
 export const complaintApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

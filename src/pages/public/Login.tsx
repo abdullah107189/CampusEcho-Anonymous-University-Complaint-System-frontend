@@ -1,80 +1,86 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { toast } from 'sonner';
-import { loginSchema, LoginFormData } from '../../lib/validations/auth.schema';
-import { useLoginMutation } from '../../lib/store/api/authApi';
-import { setCredentials } from '../../lib/store/slices/authSlice';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
-import { Button } from '../../components/ui/button';
-import { Lock } from 'lucide-react';
+// src/components/auth/Login.tsx
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux'; 
+import { useLoginMutation } from '@/lib/api/authApi';
+import { setCredentials } from '@/lib/store/slices/authSlice';
 
-export default function Login() {
+export const Login: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [login, { isLoading }] = useLoginMutation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [login, { isLoading, error }] = useLoginMutation();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema)
-  });
-
-  const onSubmit = async (data: LoginFormData) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const response = await login(data).unwrap();
-      dispatch(setCredentials({ user: response.data.user, token: response.data.token }));
-      toast.success('Logged in successfully');
+      const response = await login({ email, password }).unwrap();
+      
+      // ✅ Now setCredentials works!
+      dispatch(setCredentials({ 
+        user: response.data.user, 
+        token: response.data.token 
+      }));
+      
       navigate('/admin');
-    } catch (error) {
-      toast.error('Invalid email or password');
+    } catch (err) {
+      console.error('Login failed:', err);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-2">
-            <Lock className="h-6 w-6 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
+        <div>
+          <h2 className="text-3xl font-bold text-center">CampusEcho</h2>
+          <p className="text-center text-gray-600 mt-2">Admin Login</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
-          <CardDescription>
-            Enter your credentials to access the administrative dashboard.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="admin@campusecho.com" 
-                {...register('email')} 
-              />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+          
+          <div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          {error && (
+            <div className="text-red-600 text-sm">
+              {(error as any)?.data?.message || 'Login failed'}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                {...register('password')} 
-              />
-              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-            </div>
-            <Button type="submit" className="w-full mt-4" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </Button>
-            
-            <div className="mt-4 p-3 bg-muted text-xs rounded-md text-center">
-              <p>Demo Admin: admin@campusecho.com / admin123</p>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+          
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isLoading ? 'Logging in...' : 'Login'}
+          </button>
+
+          <div className="text-sm text-center">
+            <Link to="/register" className="text-blue-600 hover:underline">
+              Don't have an account? Register
+            </Link>
+          </div>
+        </form>
+      </div>
     </div>
   );
-}
+};

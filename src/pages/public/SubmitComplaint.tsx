@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { complaintSchema, ComplaintFormData } from '../../lib/validations/complaint.schema';
-import { useSubmitComplaintMutation } from '../../lib/store/api/complaintApi';
+import { useSubmitComplaintMutation } from '../../lib/api/complaintApi';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';

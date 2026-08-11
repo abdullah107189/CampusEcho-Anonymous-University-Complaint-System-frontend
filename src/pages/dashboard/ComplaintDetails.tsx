@@ -8,7 +8,7 @@ import {
   useUpdateStatusMutation,
   useAddNoteMutation,
   useDeleteComplaintMutation
-} from '../../lib/store/api/complaintApi';
+} from '../../lib/api/complaintApi';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
