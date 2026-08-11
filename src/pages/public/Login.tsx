@@ -1,86 +1,123 @@
-// src/components/auth/Login.tsx
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux'; 
-import { useLoginMutation } from '@/lib/api/authApi';
-import { setCredentials } from '@/lib/store/slices/authSlice';
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useState } from "react";
 
-export const Login: React.FC = () => {
+export default function Login() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [login, { isLoading, error }] = useLoginMutation();
+
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const response = await login({ email, password }).unwrap();
-      
-      // ✅ Now setCredentials works!
-      dispatch(setCredentials({ 
-        user: response.data.user, 
-        token: response.data.token 
-      }));
-      
-      navigate('/admin');
-    } catch (err) {
-      console.error('Login failed:', err);
-    }
+
+    setLoading(true);
+
+    // TODO: Connect login API here
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    setLoading(false);
+
+    // Example:
+    // If login requires OTP verification:
+    navigate("/");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
-        <div>
-          <h2 className="text-3xl font-bold text-center">CampusEcho</h2>
-          <p className="text-center text-gray-600 mt-2">Admin Login</p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          
-          <div>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          
-          {error && (
-            <div className="text-red-600 text-sm">
-              {(error as any)?.data?.message || 'Login failed'}
-            </div>
-          )}
-          
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-2 text-center">
+          <CardTitle className="text-3xl font-bold">Welcome back</CardTitle>
 
-          <div className="text-sm text-center">
-            <Link to="/register" className="text-blue-600 hover:underline">
-              Don't have an account? Register
+          <CardDescription>Login to your CampusEcho account.</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <Button type="submit" className="w-full h-11" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  Login
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="font-medium text-primary hover:underline"
+            >
+              Create account
             </Link>
           </div>
-        </form>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
-};
+}

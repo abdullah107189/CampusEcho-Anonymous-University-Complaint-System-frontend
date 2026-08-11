@@ -1,73 +1,142 @@
-// src/components/auth/VerifyOTP.tsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { useVerifyOTPMutation } from "@/lib/api/authApi";
-import { setCredentials } from "@/lib/store/slices/authSlice";
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '../../components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
 
-export const VerifyOTP: React.FC = () => {
+export default function VerifyOtp() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [verifyOTP, { isLoading }] = useVerifyOTPMutation();
+  const location = useLocation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await verifyOTP({ email, otp }).unwrap();
+  const email = location.state?.email || 'your email';
 
-      // ✅ setCredentials works here too!
-      dispatch(
-        setCredentials({
-          user: response.data.user,
-          token: response.data.token,
-        }),
-      );
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
 
-      navigate("/admin");
-    } catch (err) {
-      console.error("Verification failed:", err);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleChange = (value: string, index: number) => {
+    if (!/^\d?$/.test(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const otpCode = otp.join('');
+
+    if (otpCode.length !== 6) {
+      alert('Please enter the 6-digit OTP');
+      return;
+    }
+
+    setLoading(true);
+
+    // TODO: Verify OTP using API
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    setLoading(false);
+
+    // Example after successful verification
+    navigate('/login');
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
-        <h2 className="text-3xl font-bold text-center">Verify OTP</h2>
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-3 text-center">
+          <CardTitle className="text-3xl font-bold">
+            Verify your email
+          </CardTitle>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg"
-              required
-            />
+          <CardDescription className="leading-relaxed">
+            We've sent a 6-digit verification code to
+            <br />
+
+            <span className="font-medium text-foreground">
+              {email}
+            </span>
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex justify-center gap-2 sm:gap-3">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) =>
+                    handleChange(e.target.value, index)
+                  }
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  className="h-12 w-11 rounded-md border border-input bg-background text-center text-lg font-semibold outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  aria-label={`OTP digit ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-11"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  Verify OTP
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            Didn't receive the code?{' '}
+
+            <Link
+              to="/resend-otp"
+              state={{ email }}
+              className="font-medium text-primary hover:underline"
+            >
+              Resend OTP
+            </Link>
           </div>
-
-          <div>
-            <input
-              type="text"
-              placeholder="Enter OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-          >
-            {isLoading ? "Verifying..." : "Verify"}
-          </button>
-        </form>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
-};
+}
