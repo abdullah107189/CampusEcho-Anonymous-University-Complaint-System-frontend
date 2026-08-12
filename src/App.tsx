@@ -11,11 +11,12 @@ import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import ComplaintsList from "./pages/dashboard/ComplaintsList";
 import ComplaintDetails from "./pages/dashboard/ComplaintDetails";
-import StaffManagement from "./pages/dashboard/StaffManagement"; 
+import StaffManagement from "./pages/dashboard/StaffManagement";
 import Register from "./pages/public/auth/Register";
 import VerifyOtp from "./pages/public/auth/VerifyOtp";
 import ResendOtp from "./pages/public/auth/ResendOtp";
 import Login from "./pages/public/auth/Login";
+import ProtectedRoute from "./pages/ProtectedRoute/ProtectedRoute";
 
 export default function App() {
   return (
@@ -36,11 +37,13 @@ export default function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<DashboardLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="complaints" element={<ComplaintsList />} />
-          <Route path="complaints/:id" element={<ComplaintDetails />} />
-          <Route path="staff" element={<StaffManagement />} />
+        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+          <Route path="/admin" element={<DashboardLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="complaints" element={<ComplaintsList />} />
+            <Route path="complaints/:id" element={<ComplaintDetails />} />
+            <Route path="staff" element={<StaffManagement />} />
+          </Route>
         </Route>
 
         {/* Fallback Route */}
