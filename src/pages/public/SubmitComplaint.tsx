@@ -25,7 +25,7 @@ export default function SubmitComplaint() {
   const onSubmit = async (data: ComplaintFormData) => {
     try {
       const response = await submitComplaint(data).unwrap();
-      toast.success('Complaint submitted successfully!');
+      toast.success('Complaint submitted successfully!'); 
       navigate(`/track/${response.data.trackingId}`);
     } catch (error) {
       toast.error('Failed to submit complaint. Please try again.');
