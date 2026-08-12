@@ -1,39 +1,55 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../../../components/ui/card';
-import { ArrowRight, Loader2, Mail } from 'lucide-react';
-import { useState } from 'react';
+} from "../../../components/ui/card";
+import { ArrowRight, Loader2, Mail } from "lucide-react";
+import { useState } from "react";
+import { useResendOTPMutation } from "@/lib/api/authApi";
 
 export default function ResendOtp() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState(location.state?.email || '');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState(location.state?.email || "");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [resendOTP, { isLoading }] = useResendOTPMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setLoading(true);
+    setErrorMessage("");
 
-    // TODO: Call resend OTP API here
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setLoading(false);
-
-    navigate('/verify-otp', {
-      state: {
+    try {
+      const response = await resendOTP({
         email,
-      },
-    });
+      }).unwrap();
+
+      console.log("OTP resent successfully:", response);
+
+      // OTP successfully sent
+      navigate("/verify-otp", {
+        state: {
+          email,
+        },
+      });
+    } catch (error: any) {
+      console.error("Resend OTP failed:", error);
+
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        "Failed to resend OTP. Please try again.";
+
+      setErrorMessage(message);
+    }
   };
 
   return (
@@ -56,6 +72,7 @@ export default function ResendOtp() {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
 
@@ -64,17 +81,31 @@ export default function ResendOtp() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+
+                  if (errorMessage) {
+                    setErrorMessage("");
+                  }
+                }}
                 required
               />
             </div>
 
+            {/* Error */}
+            {errorMessage && (
+              <p className="text-center text-sm text-red-500">
+                {errorMessage}
+              </p>
+            )}
+
+            {/* Submit */}
             <Button
               type="submit"
               className="w-full h-11"
-              disabled={loading}
+              disabled={isLoading}
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Sending OTP...
@@ -89,7 +120,7 @@ export default function ResendOtp() {
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Remember your account?{' '}
+            Remember your account?{" "}
 
             <Link
               to="/login"
