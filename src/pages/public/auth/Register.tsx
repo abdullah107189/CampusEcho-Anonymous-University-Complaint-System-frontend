@@ -1,51 +1,85 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
-import { ArrowRight, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/card";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useRegisterMutation } from "@/lib/api/authApi";
 
 export default function Register() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
+  const [register, { isLoading }] = useRegisterMutation();
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
+
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+
+    // Clear error when user starts typing
+    if (errorMessage) {
+      setErrorMessage("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Password validation
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      setErrorMessage("Passwords do not match");
       return;
     }
 
-    setLoading(true);
+    setErrorMessage("");
 
-    // TODO: Connect your registration API here
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setLoading(false);
-
-    // After successful registration
-    navigate('/verify-otp', {
-      state: {
+    try {
+      // Don't send confirmPassword to backend
+      const registerData = {
+        name: formData.name,
         email: formData.email,
-      },
-    });
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      };
+
+      const response = await register(registerData).unwrap();
+
+      console.log("Registration successful:", response);
+
+      // Navigate only after successful API response
+      navigate("/verify-otp", {
+        state: {
+          email: formData.email,
+        },
+      });
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+
+      // Backend error message
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        "Registration failed. Please try again.";
+
+      setErrorMessage(message);
+    }
   };
 
   return (
@@ -63,6 +97,7 @@ export default function Register() {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
 
@@ -77,6 +112,7 @@ export default function Register() {
               />
             </div>
 
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
 
@@ -91,6 +127,7 @@ export default function Register() {
               />
             </div>
 
+            {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
 
@@ -105,10 +142,9 @@ export default function Register() {
               />
             </div>
 
+            {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">
-                Confirm Password
-              </Label>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
 
               <Input
                 id="confirmPassword"
@@ -121,12 +157,14 @@ export default function Register() {
               />
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-11"
-              disabled={loading}
-            >
-              {loading ? (
+            {/* Error Message */}
+            {errorMessage && (
+              <p className="text-sm text-red-500 text-center">{errorMessage}</p>
+            )}
+
+            {/* Submit Button */}
+            <Button type="submit" className="w-full h-11" disabled={isLoading}>
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
@@ -141,7 +179,7 @@ export default function Register() {
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Link
               to="/login"
               className="font-medium text-primary hover:underline"

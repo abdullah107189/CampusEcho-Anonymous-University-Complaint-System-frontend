@@ -33,14 +33,16 @@ export const authApi = baseApi.injectEndpoints({
         body: credentials,
         credentials: "include",
       }),
+
       async onQueryStarted(args, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
 
-          // Tokens are set via cookies by backend
-          // But we need to save user info
+          console.log("LOGIN RESPONSE:", data);
+
           if (data?.data?.user) {
             cookieUtils.setUser(data.data.user);
+
             dispatch(setUser(data.data.user));
           }
         } catch (error) {
@@ -48,7 +50,7 @@ export const authApi = baseApi.injectEndpoints({
         }
       },
     }),
-  
+
     register: builder.mutation<any, RegisterRequest>({
       query: (data) => ({
         url: "/auth/register",

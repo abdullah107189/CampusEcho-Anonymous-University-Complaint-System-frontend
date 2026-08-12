@@ -11,37 +11,57 @@ import {
 } from "../../../components/ui/card";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useLoginMutation } from "@/lib/api/authApi";
 
 export default function Login() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
+  const [login, { isLoading }] = useLoginMutation();
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+
+    // Clear error when user types
+    if (errorMessage) {
+      setErrorMessage("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setLoading(true);
+    setErrorMessage("");
 
-    // TODO: Connect login API here
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      }).unwrap();
 
-    setLoading(false);
+      console.log("Login successful:", response);
 
-    // Example:
-    // If login requires OTP verification:
-    navigate("/");
+      // Login successful
+      navigate("/admin", { replace: true });
+    } catch (error: any) {
+      console.error("Login failed:", error);
+
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        "Invalid email or password. Please try again.";
+
+      setErrorMessage(message);
+    }
   };
 
   return (
@@ -55,6 +75,7 @@ export default function Login() {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
 
@@ -69,6 +90,7 @@ export default function Login() {
               />
             </div>
 
+            {/* Password */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
@@ -92,8 +114,14 @@ export default function Login() {
               />
             </div>
 
-            <Button type="submit" className="w-full h-11" disabled={loading}>
-              {loading ? (
+            {/* Error */}
+            {errorMessage && (
+              <p className="text-center text-sm text-red-500">{errorMessage}</p>
+            )}
+
+            {/* Submit */}
+            <Button type="submit" className="w-full h-11" disabled={isLoading}>
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Logging in...

@@ -1,15 +1,26 @@
-import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../lib/store/store';
-import { logout } from '../../lib/store/slices/authSlice';
-import { useTheme } from 'next-themes';
-import { Megaphone, LayoutDashboard, ListTodo, Users, LogOut, Menu, Moon, Sun } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '../../components/ui/sheet';
-import { useState } from 'react';
+import { Outlet, Navigate, Link, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../lib/store/store";
+import { logout } from "../../lib/store/slices/authSlice";
+import { useTheme } from "next-themes";
+import {
+  Megaphone,
+  LayoutDashboard,
+  ListTodo,
+  Users,
+  LogOut,
+  Menu,
+  Moon,
+  Sun,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "../../components/ui/sheet";
+import { useState } from "react";
 
 export default function DashboardLayout() {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated,
+  );
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
   const { theme, setTheme } = useTheme();
@@ -25,15 +36,15 @@ export default function DashboardLayout() {
   };
 
   const navItems = [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Complaints', href: '/admin/complaints', icon: ListTodo },
-    { name: 'Staff Management', href: '/admin/staff', icon: Users },
+    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { name: "Complaints", href: "/admin/complaints", icon: ListTodo },
+    { name: "Staff Management", href: "/admin/staff", icon: Users },
   ];
 
   const Sidebar = () => (
     <div className="h-full flex flex-col bg-muted/30 border-r w-64">
       <div className="h-16 flex items-center px-6 border-b">
-        <Link to="/admin" className="flex items-center space-x-2">
+        <Link to="/" className="flex items-center space-x-2">
           <Megaphone className="h-6 w-6 text-primary" />
           <span className="font-bold text-xl tracking-tight">CampusEcho</span>
         </Link>
@@ -47,9 +58,9 @@ export default function DashboardLayout() {
                 <Link
                   to={item.href}
                   className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
-                    isActive 
-                      ? 'bg-primary text-primary-foreground font-medium' 
-                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                    isActive
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
@@ -65,17 +76,27 @@ export default function DashboardLayout() {
         <div className="flex items-center justify-between">
           <div className="text-sm">
             <p className="font-medium">{user?.name}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {user?.role}
+            </p>
           </div>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
           </Button>
         </div>
-        <Button variant="outline" className="w-full justify-start text-destructive" onClick={handleLogout}>
+        <Button
+          variant="outline"
+          className="w-full justify-start text-destructive"
+          onClick={handleLogout}
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Logout
         </Button>
@@ -98,11 +119,9 @@ export default function DashboardLayout() {
             <span className="font-bold tracking-tight">CampusEcho</span>
           </Link>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-6 w-6" />
+            </Button>
             <SheetContent side="left" className="p-0 w-64">
               <Sidebar />
             </SheetContent>
