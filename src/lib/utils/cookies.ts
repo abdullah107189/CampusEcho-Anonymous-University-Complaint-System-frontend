@@ -4,111 +4,93 @@ import Cookies from "js-cookie";
 const isProduction =
   import.meta.env.PROD || import.meta.env.NODE_ENV === "production";
 
+const COOKIE_OPTIONS: Cookies.CookieAttributes = {
+  expires: 7,
+  secure: isProduction,
+  sameSite: "lax",
+  path: "/",
+};
+
+const COOKIE_NAMES = {
+  accessToken: "accessToken",
+  refreshToken: "refreshToken",
+  user: "user",
+} as const;
+
+const setCookie = (
+  name: string,
+  value: string,
+  options: Cookies.CookieAttributes = COOKIE_OPTIONS,
+) => {
+  Cookies.set(name, value, options);
+};
+
+const getCookie = (name: string): string | undefined => {
+  return Cookies.get(name);
+};
+
+const removeCookie = (name: string) => {
+  Cookies.remove(name, { path: "/" });
+};
+
 export const cookieUtils = {
-  setAccessToken: (token: string) => {
-    console.log("📝 Setting access token");
-    Cookies.set("accessToken", token, {
-      expires: 7,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/",
-    });
-    // ✅ Verify it's set
-    console.log(
-      "✅ Access token set, verifying:",
-      Cookies.get("accessToken") ? "✅ Success" : "❌ Failed",
-    );
+  // ─────────────────────────────────────────────
+  // Authentication
+  // ─────────────────────────────────────────────
+
+  setAccessToken(token: string) {
+    setCookie(COOKIE_NAMES.accessToken, token);
   },
 
-  setRefreshToken: (token: string) => {
-    console.log("📝 Setting refresh token");
-    Cookies.set("refreshToken", token, {
-      expires: 7,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/",
-    });
-    console.log(
-      "✅ Refresh token set, verifying:",
-      Cookies.get("refreshToken") ? "✅ Success" : "❌ Failed",
-    );
+  getAccessToken() {
+    return getCookie(COOKIE_NAMES.accessToken);
   },
 
-  getAccessToken: () => {
-    // ✅ Try multiple ways
-    const token = Cookies.get("accessToken");
+  setRefreshToken(token: string) {
+    setCookie(COOKIE_NAMES.refreshToken, token);
+  },
 
-    // ✅ Fallback: Check document.cookie directly
-    if (!token) {
-      const allCookies = document.cookie.split(";");
-      for (let cookie of allCookies) {
-        const [name, value] = cookie.trim().split("=");
-        if (name === "accessToken") {
-          console.log("📤 Found accessToken via document.cookie");
-          return value;
-        }
-      }
+  getRefreshToken() {
+    return getCookie(COOKIE_NAMES.refreshToken);
+  },
+
+  // ─────────────────────────────────────────────
+  // User
+  // ─────────────────────────────────────────────
+
+  setUser(user: unknown) {
+    setCookie(COOKIE_NAMES.user, JSON.stringify(user));
+  },
+
+  getUser<T = unknown>(): T | null {
+    const user = getCookie(COOKIE_NAMES.user);
+
+    if (!user) {
+      return null;
     }
 
-    console.log("📤 Get access token:", token ? "✅ Found" : "❌ Not found");
-    return token;
-  },
-
-  getRefreshToken: () => {
-    const token = Cookies.get("refreshToken");
-
-    // ✅ Fallback: Check document.cookie directly
-    if (!token) {
-      const allCookies = document.cookie.split(";");
-      for (let cookie of allCookies) {
-        const [name, value] = cookie.trim().split("=");
-        if (name === "refreshToken") {
-          console.log("📤 Found refreshToken via document.cookie");
-          return value;
-        }
-      }
+    try {
+      return JSON.parse(user) as T;
+    } catch {
+      return null;
     }
-
-    console.log("📤 Get refresh token:", token ? "✅ Found" : "❌ Not found");
-    return token;
   },
 
-  // ✅ Debug: Show all cookies
-  debug: () => {
-    console.log("🍪 All cookies from js-cookie:", Cookies.get());
-    console.log("🍪 All cookies from document.cookie:", document.cookie);
-    return {
-      jsCookie: Cookies.get(),
-      documentCookie: document.cookie,
-    };
+  // ─────────────────────────────────────────────
+  // Cleanup
+  // ─────────────────────────────────────────────
+
+  clearTokens() {
+    removeCookie(COOKIE_NAMES.accessToken);
+    removeCookie(COOKIE_NAMES.refreshToken);
   },
 
-  clearTokens: () => {
-    Cookies.remove("accessToken", { path: "/" });
-    Cookies.remove("refreshToken", { path: "/" });
+  clearUser() {
+    removeCookie(COOKIE_NAMES.user);
   },
 
-  setUser: (user: any) => {
-    Cookies.set("user", JSON.stringify(user), {
-      expires: 7,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/",
-    });
-  },
-
-  getUser: () => {
-    const user = Cookies.get("user");
-    return user ? JSON.parse(user) : null;
-  },
-
-  clearUser: () => {
-    Cookies.remove("user", { path: "/" });
-  },
-
-  clearAll: () => {
-    Cookies.remove("accessToken", { path: "/" });
-    Cookies.remove("refreshToken", { path: "/" });
-    Cookies.remove("user", { path: "/" });
+  clearAll() {
+    this.clearTokens();
+    this.clearUser();
   },
 };
