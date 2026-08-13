@@ -1,70 +1,107 @@
-// src/redux/apis/baseApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// src/lib/redux/apis/baseApi.ts
+import { Mutex } from "async-mutex";
+import {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+  createApi,
+  fetchBaseQuery,
+} from "@reduxjs/toolkit/query/react";
+
 import { cookieUtils } from "../utils/cookies";
 import { logout } from "../store/slices/authSlice";
 
-// Define error type
 interface ErrorResponse {
-  data?: {
-    code?: string;
-    message?: string;
-  };
-  status?: number;
+  code?: string;
+  message?: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseUrl: API_URL,
   credentials: "include",
   prepareHeaders: (headers) => {
-    const token = cookieUtils.getAccessToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+    const accessToken = cookieUtils.getAccessToken();
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
     }
-    headers.set("Content-Type", "application/json");
     return headers;
   },
 });
 
-const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
+const handleLogout = (api: any) => {
+  cookieUtils.clearAll();
+  api.dispatch(logout());
+  if (typeof window !== "undefined") {
+    // window.location.href = "/login";
+  }
+};
+
+const mutex = new Mutex();
+
+const baseQueryWithReauth: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+  await mutex.waitForUnlock();
+
   let result = await baseQuery(args, api, extraOptions);
 
-  // Check if error exists and status is 401
-  const error = result.error as ErrorResponse | undefined;
+  if (result.error?.status !== 401) {
+    return result;
+  }
 
-  if (error?.status === 401) {
-    const errorData = error.data as
-      | { code?: string; message?: string }
-      | undefined;
+  const requestUrl = typeof args === "string" ? args : args.url;
 
-    if (errorData?.code === "TOKEN_EXPIRED") {
-      console.log("🔄 Token expired, refreshing...");
+  if (requestUrl === "/auth/logout" || requestUrl === "/auth/refresh-token") {
+    return result;
+  }
 
-      // Try to refresh token
-      const refreshResult = await baseQuery(
-        {
-          url: "/auth/refresh-token",
-          method: "POST",
-          credentials: "include",
+  const errorData = result.error.data as ErrorResponse | undefined;
+
+  if (errorData?.code !== "TOKEN_EXPIRED") {
+    handleLogout(api);
+    return result;
+  }
+
+  if (!mutex.isLocked()) {
+    const release = await mutex.acquire();
+
+    try {
+      // ✅ raw fetch diye — kono Authorization header pathabo na
+      // shudhu httpOnly cookie (credentials: include) e refresh token jabe
+      const refreshResponse = await fetch(`${API_URL}/auth/refresh-token`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
         },
-        api,
-        extraOptions,
-      );
+      });
 
-      if (refreshResult.data) {
-        // Retry the original request
+      const refreshJson = await refreshResponse.json();
+
+      if (refreshResponse.ok && refreshJson?.data) {
+        if (refreshJson.data.accessToken) {
+          cookieUtils.setAccessToken(refreshJson.data.accessToken);
+        }
+        // ❌ eita o remove — backend HttpOnly cookie nijei rotate kore dise already
+        // if (refreshJson.data.refreshToken) {
+        //   cookieUtils.setRefreshToken(refreshJson.data.refreshToken);
+        // }
         result = await baseQuery(args, api, extraOptions);
       } else {
-        // Refresh failed - logout
-        cookieUtils.clearTokens();
-        cookieUtils.clearUser();
-        api.dispatch(logout());
-
-        // Redirect to login
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
+        handleLogout(api);
       }
+    } catch (err) {
+      handleLogout(api);
+    } finally {
+      release();
     }
+  } else {
+    await mutex.waitForUnlock();
+    result = await baseQuery(args, api, extraOptions);
   }
 
   return result;
@@ -73,15 +110,6 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 export const baseApi = createApi({
   reducerPath: "baseApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: [
-    "Auth",
-    "Complaint",
-    "Admin",
-    "User",
-    "Notification",
-    "Comment",
-    "DashboardStats",
-    "Staff",
-  ],
+  tagTypes: ["Auth", "Complaint", "Admin", "User"],
   endpoints: () => ({}),
 });

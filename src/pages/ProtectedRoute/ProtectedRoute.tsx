@@ -1,38 +1,45 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { RootState } from "../../lib/store/store";
+import React, { useEffect } from "react";
+import { Navigate, Outlet } from "react-router-dom";
 
-interface ProtectedRouteProps {
-  allowedRoles?: ("admin" | "staff")[];
+import { useAppSelector } from "@/lib/hooks";
+
+interface PrivateRouteProps {
+  allowedRoles?: string[];
 }
 
-export default function ProtectedRoute({
-  allowedRoles,
-}: ProtectedRouteProps) {
-  const location = useLocation();
-
-  const { isAuthenticated, user } = useSelector(
-    (state: RootState) => state.auth
+export const ProtectedRoute: React.FC<PrivateRouteProps> = ({
+  allowedRoles = ["admin", "staff"],
+}) => {
+  const { isAuthenticated, user, isLoading } = useAppSelector(
+    (state) => state.auth,
   );
 
-  // Not logged in
-  if (!isAuthenticated) {
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      console.log("🔒 User is not authenticated");
+    }
+  }, [isLoading, isAuthenticated]);
+ 
+  if (isLoading) {
     return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location }}
-      />
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      </div>
     );
   }
 
-  // Logged in but role is not allowed
-  if (
-    allowedRoles &&
-    (!user || !allowedRoles.includes(user.role))
-  ) {
+  if (!isAuthenticated) {
+    console.log("🔒 Not authenticated, redirecting to login...");
+
+    return <Navigate to="/login" replace />;
+  }
+
+  // Role check
+  if (user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
-}
+};
+
+export default ProtectedRoute;

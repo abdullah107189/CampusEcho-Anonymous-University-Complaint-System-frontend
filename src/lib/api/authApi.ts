@@ -1,7 +1,7 @@
 // src/lib/api/authApi.ts
 import { baseApi } from "./baseApi";
-import { setUser, logout } from "../store/slices/authSlice";
 import { cookieUtils } from "../utils/cookies";
+import { logout, setUser } from "../store/slices/authSlice";
 
 interface LoginRequest {
   email: string;
@@ -26,30 +26,50 @@ interface ResendOTPRequest {
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    login: builder.mutation<any, LoginRequest>({
-      query: (credentials) => ({
-        url: "/auth/login",
-        method: "POST",
-        body: credentials,
-        credentials: "include",
-      }),
+    // login: builder.mutation<any, LoginRequest>({
+    //   query: (credentials) => ({
+    //     url: "/auth/login",
+    //     method: "POST",
+    //     body: credentials,
+    //     credentials: "include",
+    //   }),
+    //   async onQueryStarted(args, { dispatch, queryFulfilled }) {
+    //     try {
+    //       const { data } = await queryFulfilled;
+    //       if (data?.data?.user) {
+    //         cookieUtils.setUser(data.data.user);
+    //         dispatch(setUser(data.data.user));
+    //       }
+    //     } catch (error) {
+    //       console.error("Login failed:", error);
+    //     }
+    //   },
+    // }),
+  login: builder.mutation({
+  query: (credentials) => ({
+    url: "/auth/login",
+    method: "POST",
+    body: credentials,
+    credentials: "include",
+  }),
+  async onQueryStarted(args, { dispatch, queryFulfilled }) {
+    try {
+      const { data } = await queryFulfilled;
 
-      async onQueryStarted(args, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
+      if (data?.data?.user) {
+        cookieUtils.setUser(data.data.user);
 
-          console.log("LOGIN RESPONSE:", data);
+        if (data.data.accessToken) {
+          cookieUtils.setAccessToken(data.data.accessToken);
+        } 
 
-          if (data?.data?.user) {
-            cookieUtils.setUser(data.data.user);
-
-            dispatch(setUser(data.data.user));
-          }
-        } catch (error) {
-          console.error("Login failed:", error);
-        }
-      },
-    }),
+        dispatch(setUser(data.data.user));
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  },
+}),
 
     register: builder.mutation<any, RegisterRequest>({
       query: (data) => ({
@@ -69,7 +89,6 @@ export const authApi = baseApi.injectEndpoints({
       async onQueryStarted(args, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-
           if (data?.data?.user) {
             cookieUtils.setUser(data.data.user);
             dispatch(setUser(data.data.user));
@@ -116,11 +135,18 @@ export const authApi = baseApi.injectEndpoints({
       async onQueryStarted(args, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          cookieUtils.clearTokens();
-          cookieUtils.clearUser();
+          cookieUtils.clearAll();
           dispatch(logout());
+          if (typeof window !== "undefined") {
+            window.location.href = "/login";
+          }
         } catch (error) {
           console.error("Logout failed:", error);
+          cookieUtils.clearAll();
+          dispatch(logout());
+          if (typeof window !== "undefined") {
+            window.location.href = "/login";
+          }
         }
       },
     }),

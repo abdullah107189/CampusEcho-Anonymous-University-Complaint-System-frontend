@@ -12,10 +12,15 @@ import {
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useLoginMutation } from "@/lib/api/authApi";
+import { cookieUtils } from "@/lib/utils/cookies";
+import { setUser } from "@/lib/store/slices/authSlice";
+import { useAppDispatch } from "@/lib/hooks";
+import { useDispatch } from "react-redux";
+import { store } from "@/lib/store/store";
 
 export default function Login() {
   const navigate = useNavigate();
-
+  const dispatch = useAppDispatch();
   const [login, { isLoading }] = useLoginMutation();
 
   const [formData, setFormData] = useState({
@@ -37,9 +42,35 @@ export default function Login() {
     }
   };
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   setErrorMessage("");
+
+  //   try {
+  //     const response = await login({
+  //       email: formData.email,
+  //       password: formData.password,
+  //     }).unwrap();
+
+  //     console.log("Login successful:", response);
+
+  //     // Login successful
+  //     navigate("/admin", { replace: true });
+  //   } catch (error: any) {
+  //     console.error("Login failed:", error);
+
+  //     const message =
+  //       error?.data?.message ||
+  //       error?.message ||
+  //       "Login failed.";
+
+  //     setErrorMessage(message);
+  //   }
+  // };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setErrorMessage("");
 
     try {
@@ -48,22 +79,30 @@ export default function Login() {
         password: formData.password,
       }).unwrap();
 
-      console.log("Login successful:", response);
+     
 
-      // Login successful
+      // ✅ Save tokens from response
+      if (response?.data?.accessToken) {
+        cookieUtils.setAccessToken(response.data.accessToken);
+      }
+
+      if (response?.data?.refreshToken) {
+        cookieUtils.setRefreshToken(response.data.refreshToken);
+      }
+
+      if (response?.data?.user) {
+        cookieUtils.setUser(response.data.user);
+        dispatch(setUser(response.data.user));
+      }
+
+
       navigate("/admin", { replace: true });
     } catch (error: any) {
-      console.error("Login failed:", error);
-
       const message =
-        error?.data?.message ||
-        error?.message ||
-        "Invalid email or password. Please try again.";
-
+        error?.data?.message || "Invalid email or password. Please try again.";
       setErrorMessage(message);
     }
   };
-
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
       <Card className="w-full max-w-md">
